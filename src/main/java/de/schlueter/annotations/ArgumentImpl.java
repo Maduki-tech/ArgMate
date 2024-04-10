@@ -2,27 +2,41 @@ package de.schlueter.annotations;
 
 import java.lang.reflect.Field;
 
-// TODO: This still need to be tested and a interface should be created
-public class ArgumentImpl {
+public class ArgumentImpl implements ArgumentInterface {
 
-    private String getArgument(Object obj) throws Exception{
+    private Object obj;
+
+    public ArgumentImpl(Object obj){
+        this.obj = obj;
+    }
+    @Override
+    public void parseArgs(String[] args) throws Exception {
+        System.out.println("Parsing arguments");
         Class<?> clazz = obj.getClass();
-        StringBuilder argument = new StringBuilder();
+
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
             if (field.isAnnotationPresent(Argument.class)) {
-                argument.append(getKey(field)).append(" ").append(field.get(obj)).append(" ");
+                System.out.println("Found argument");
+                field.setAccessible(true);
+                String value = parseForArgumentValue(field, args);
+                field.set(obj, value);
             }
         }
-        return argument.toString();
+
     }
 
-    private String getKey(Field field){
-        Argument argument = field.getAnnotation(Argument.class);
-        if (argument.shortName().isEmpty()) {
-            return "--" + argument.longName();
-        } else {
-            return "-" + argument.shortName();
+    private String parseForArgumentValue(Field field, String[] args){
+        String shortName = field.getAnnotation(Argument.class).shortName();
+        String longName = field.getAnnotation(Argument.class).longName();
+        String value = null;
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].equals("-" + shortName) || args[i].equals("--" + longName)) {
+                value = args[i + 1];
+                break;
+            }
         }
+
+        return value;
     }
 }
